@@ -1,0 +1,15 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" >
+    <f:section title="Secrets Masking">
+        <f:entry title="${%Patterns}" description="${%List of Regex Patterns to match against Secrets to be Masked}" >
+            <f:repeatable field="secretPatterns" minimum="0" default="">
+                <st:include page="config.jelly" class="${descriptor.clazz}" />
+            </f:repeatable>
+        </f:entry>
+        <f:advanced>
+            <f:entry title="Disable Secrets Masking" field="maskDisabled" checked="${instance.isMaskDisabled()}">
+                <f:checkbox/>
+            </f:entry>
+        </f:advanced>
+    </f:section>
+</j:jelly>
