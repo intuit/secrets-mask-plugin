@@ -13,7 +13,7 @@
 
     <groupId>com.intuit.dev.build.ibp.plugins</groupId>
     <artifactId>secrets-mask-plugin</artifactId>
-    <version>1.21-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>hpi</packaging>
 
     <name>IBP Secrets Masks Plugin</name>
