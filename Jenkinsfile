@@ -1,6 +1,3 @@
-def docker_url = 'docker.intuit.com/docker-rmt'
-def ibpMavenSettingsFileCredential = 'ibp-maven-settings-file'
-def assetId = '3821321876124013868'
 def pluginVersion = ''
 
 pipeline {
@@ -14,7 +11,7 @@ pipeline {
             spec:
               containers:
               - name: maven
-                image: '${docker_url}/maven:3.6.2-jdk-8'
+                image: 'maven:3.6.2-jdk-8'
                 command:
                 - cat
                 tty: true
@@ -23,7 +20,6 @@ pipeline {
     }
     environment {
         CODE_COV_TOKEN = credentials('ibp-codecov-token')
-        IBP_MAVEN_SETTINGS_FILE = credentials("${ibpMavenSettingsFileCredential}")
     }
     options {
         buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '50', artifactNumToKeepStr: '30'))
@@ -43,7 +39,7 @@ pipeline {
                 container('maven') {
                     sh '''
                         export M3_HOME=${MAVEN_HOME}/bin
-                        mvn -s ${IBP_MAVEN_SETTINGS_FILE} clean deploy -B
+                        mvn clean deploy -B
                     '''
                 }
             }
@@ -76,7 +72,7 @@ pipeline {
                         git config --global user.email "first_last@intuit.com"
                         git config --global credential.helper "store --file=/tmp/gitcredfile"
                         export M3_HOME=${MAVEN_HOME}/bin
-                        mvn -s ${IBP_MAVEN_SETTINGS_FILE} -Dusername=${GITHUB_USER} -Dpassword=${GITHUB_TOKEN} release:clean release:prepare release:perform -B -Dsettings_file=${IBP_MAVEN_SETTINGS_FILE};
+                        mvn -Dusername=${GITHUB_USER} -Dpassword=${GITHUB_TOKEN} release:clean release:prepare release:perform -B;
                     '''
                     script {
                         pluginVersion = sh(returnStdout: true, script: "mvn -q -Dexec.executable=echo -Dexec.args='\${project.version}' --non-recursive exec:exec 2>/dev/null").trim()
@@ -99,38 +95,6 @@ pipeline {
             steps {
                 container('maven') {
                     nexusPolicyEvaluation iqApplication: "${assetId}", iqStage: 'build'
-                }
-            }
-        }
-    }
-    post {
-        success {
-            script {
-                try {
-                    if (env.GIT_BRANCH == "master" || env.GIT_BRANCH == "origin/master") {
-                        def startTime = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'")
-                        def commitId = "${env.GIT_COMMIT}"
-                        if (!env.GIT_COMMIT) {
-                            echo "No COMMIT_ID environment variable, using git log to get last commit ID..."
-                            commitId = sh(returnStdout: true, script: "git log --format='%H' -n 1").trim()
-                        }
-                        if (pluginVersion) {
-                            def json = """{"applicationName":"IBP","applicationVersion":"${pluginVersion}","commitId":"${commitId}","deployStartTime":"${startTime}","assetId":"${assetId}","jobUrl":"${env.BUILD_URL}","envName":"prd"}"""
-                            echo "JSON: ${json}"
-                            sh """
-                                curl \
-                                 -s \
-                                 -X POST "https://eventbus.intuit.com/v2/ip-opmetrics-deployment-event-prd" \
-                                 -H "Content-Type: application/json" \
-                                 -d '${json}'
-                            """
-                        } else {
-                            echo "Could not get plugin version. Please try again to allow OpMetrics deployment."
-                        } 
-                    }
-                } catch (curlErr) {
-                    echo "ERROR posting deploy metrics: $curlErr"
-                    currentBuild.result = 'FAILURE'
                 }
             }
         }
