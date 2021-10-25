@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>com.intuit.dev.build.ibp.plugins</groupId>
-    <artifactId>secrets-mask-plugin</artifactId>
+    <artifactId>secrets-mask</artifactId>
     <version>1.0</version>
     <packaging>hpi</packaging>
 
